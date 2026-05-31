@@ -18,38 +18,44 @@ KERNELS = ["naive", "opt"]
 
 
 
-def run_gem5(cu, kernel):
+def run_gem5(cu):
     """Run one GEM5 simulation and save stats to a local file."""
-    stats_file = f"stats_task1_{kernel}_cu{cu}.txt"
+    stats_file = f"stats_task2_cu{cu}.txt"
     if args.dry_run:
         return stats_file
 
-    binary = f"histogram/bin/histogram_{kernel}.bin"
     subprocess.run([
         GEM5_BIN,
         f"{GEM5_ROOT}/configs/example/apu_se.py",
         "-n", "3",
         "--num-compute-units", str(cu),
         "--gfx-version=gfx902",
-        "-c", binary,
+        "-c", "mat_transpose/bin/mat_transpose.bin",
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
     shutil.copy("m5out/stats.txt", stats_file)
     return stats_file
 
 
-def parse_stats(stats_file, cu):
+def parse_stats(stats_file, cu, block=0):
     """Extract the first occurrence of each metric from the stats file."""
     with open(stats_file) as f:
         lines = f.readlines()
 
-    # keep only first stats block
-    end = next(i for i, l in enumerate(lines)
-               if l.startswith("---------- End Simulation Statistics"))
-    lines = lines[:end]
+    blocks = []
+    current = []
+
+    for line in lines:
+        if line.startswith("---------- End Simulation Statistics"):
+            blocks.append(current)
+            current = []
+        else:
+            current.append(line)
+
+    block_lines = blocks[block]
 
     def first(prefix):
-        for line in lines:
+        for line in block_lines:
             if line.startswith(prefix):
                 return line.split()[1]
         return None
@@ -75,9 +81,10 @@ def parse_stats(stats_file, cu):
 
 results = {}
 for cu in COMPUTE_UNITS:
-    for kernel in KERNELS:
-        stats_file = run_gem5(cu, kernel)
-        results[(cu, kernel)] = parse_stats(stats_file, cu)
+    stats_file = run_gem5(cu)
+    results[(cu, "naive")] = parse_stats(stats_file, cu, block=0)
+    results[(cu, "opt")] = parse_stats(stats_file, cu, block=1)
+
 
 print("| CU | Kernel  | Load Latency | vALUInsts | ldsBankAccess | Total Cycles | VPC   |")
 print("|----|---------|--------------|-----------|---------------|--------------|-------|")
@@ -93,7 +100,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-fig.suptitle("Histogram kernel performance: Naive vs Optimized")
+fig.suptitle("Transpose kernel performance: Naive vs Optimized")
 
 metrics = ["load_latency", "vALUInsts", "ldsBankAccess", "totalCycles", "vpc"]
 titles  = ["Load Latency", "vALU Insts", "LDS Bank Access", "Total Cycles", "VPC"]
@@ -110,5 +117,5 @@ for ax, metric, title in zip(axes.flat, metrics, titles):
 
 axes.flat[-1].set_visible(False) 
 plt.tight_layout()
-plt.savefig("task1_graphs.png", dpi=150)
-print("Graf shranjen: task1_graphs.png")
+plt.savefig("task2_graphs.png", dpi=150)
+print("Graf shranjen: task2_graphs.png")
