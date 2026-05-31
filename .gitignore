@@ -28,3 +28,4 @@ horner_scheme/
 !make_apptainer.sh
 stencil/
 solutions.txt
+m5out
