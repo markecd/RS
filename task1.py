@@ -87,3 +87,28 @@ for cu in COMPUTE_UNITS:
         print(f"| {cu:2} | {kernel:7} | {m['load_latency']:12.2f} | "
               f"{m['vALUInsts']:9} | {m['ldsBankAccess']:13} | "
               f"{m['totalCycles']:12} | {m['vpc']:.3f} |")
+        
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+fig.suptitle("Histogram kernel performance: Naive vs Optimized")
+
+metrics = ["load_latency", "vALUInsts", "ldsBankAccess", "totalCycles", "vpc"]
+titles  = ["Load Latency", "vALU Insts", "LDS Bank Access", "Total Cycles", "VPC"]
+
+for ax, metric, title in zip(axes.flat, metrics, titles):
+    naive = [results[(cu, "naive")][metric] for cu in COMPUTE_UNITS]
+    opt   = [results[(cu, "opt")]  [metric] for cu in COMPUTE_UNITS]
+    ax.plot(COMPUTE_UNITS, naive, marker='o', label="Naive")
+    ax.plot(COMPUTE_UNITS, opt,   marker='o', label="Opt")
+    ax.set_title(title)
+    ax.set_xlabel("Compute Units")
+    ax.set_xticks(COMPUTE_UNITS)
+    ax.legend()
+
+axes.flat[-1].set_visible(False) 
+plt.tight_layout()
+plt.savefig("task1_graphs.png", dpi=150)
+print("Graf shranjen: task1_graphs.png")
