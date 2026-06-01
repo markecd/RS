@@ -73,7 +73,8 @@ def parse_stats(stats_file, cu, block=0):
         cf_div_stdev   += float(first(f"system.cpu3.CUs{i}.controlFlowDivergenceDist::stdev"))
         global_reads  += int(first(f"system.cpu3.CUs{i}.globalReads"))
         global_writes  += int(first(f"system.cpu3.CUs{i}.globalWrites"))
-        coalesced  += int(first(f"system.cpu3.CUs{i}.coalsrLineAddresses::total"))
+
+    coalesced  += int(first(f"system.cpu3.coalsrLineAddresses::total"))
 
     return {
         "cf_div_mean":  cf_div_mean  / cu,
@@ -81,7 +82,7 @@ def parse_stats(stats_file, cu, block=0):
         "vALUInsts":    v_alu        // cu,
         "globalReads":  global_reads // cu,
         "globalWrites": global_writes// cu,
-        "coalesced":    coalesced    // cu,
+        "coalesced":    coalesced,
     }
 
 
